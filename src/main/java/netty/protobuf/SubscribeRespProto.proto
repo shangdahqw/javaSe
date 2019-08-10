@@ -1,0 +1,14 @@
+syntax = "proto3"; // 声明为protobuf 3定义文件
+package netty;
+
+option java_package = "netty.protobuf.pojo"; // 声明生成消息类的java包路径
+option java_outer_classname = "SubscribeRespProto"; // 声明生成消息类的类名
+
+message SubscribeResp {
+
+    int32 subReqID = 1;
+    int32 respCode = 2;
+    string desc = 3;
+
+}
+

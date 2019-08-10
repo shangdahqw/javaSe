@@ -1,0 +1,184 @@
+package bishi;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
+
+// 派送点信息
+class Point {
+  int x;
+  int y;
+
+  public Point(int x, int y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  public int getX() {
+    return this.x;
+  }
+
+  public int getY() {
+    return this.y;
+  }
+
+  // 计算两个派送点之间的距离
+  public double distanceTo(Point point) {
+
+    return Math.abs(point.getX() - this.x) + Math.abs(point.getY() - this.y);
+  }
+
+  @Override
+  public String toString() {
+    return "Point{" + "x=" + x + ", y=" + y + '}';
+  }
+}
+
+// 派送路线
+class Tour {
+
+  // 派送路线tour,里面包含所有派送点
+  private ArrayList tour = new ArrayList<Point>();
+  // 构造一个空白派送路线
+  public Tour() {
+    for (int i = 0; i < Tuihuo.NUM; i++) {
+      tour.add(null);
+    }
+  }
+
+  // 通过已有的路线tour,克隆一个新的派送路线
+  public Tour(ArrayList tour) {
+    this.tour = (ArrayList) tour.clone();
+  }
+
+  public ArrayList getTour() {
+    return tour;
+  }
+
+  // 建立一个随机的派送路线
+  public void generateRandomTour() {
+    for (int pointIndex = 0; pointIndex < Tuihuo.NUM; pointIndex++) {
+      setPoint(pointIndex, Tuihuo.destinationPoints.get(pointIndex));
+    }
+    // 随机打乱路线的顺序
+    Collections.shuffle(tour);
+  }
+
+  // 获取这条派送路线的总距离
+  public int getTotleDistance() {
+
+    int tourDistance = 0;
+    for (int pointIndex = 0; pointIndex < tourSize(); pointIndex++) {
+
+      Point fromPoint = (Point) tour.get(pointIndex);
+      Point destinationPoint;
+      if (pointIndex + 1 < tourSize()) {
+        destinationPoint = (Point) getPoint(pointIndex + 1);
+      } else {
+        destinationPoint = (Point) getPoint(0);
+      }
+      tourDistance += fromPoint.distanceTo(destinationPoint);
+    }
+    return tourDistance;
+  }
+
+  public int tourSize() {
+    return tour.size();
+  }
+
+  public Point getPoint(int tourPosition) {
+    return (Point) tour.get(tourPosition);
+  }
+
+  public void setPoint(int tourPosition, Point point) {
+    tour.set(tourPosition, point);
+  }
+}
+
+public class Tuihuo {
+
+  static List<Point> destinationPoints = new ArrayList<>(); // 保存所有经过的点
+  static int NUM; // 总站点数
+  // 计算退火接收概率
+  static double acceptanceProbability(int energy, int newEnergy, double temperature) {
+    // 如果新的方案更好
+    if (newEnergy < energy) {
+      return 1.0;
+    }
+    // 如果新的方案更差，返回一个新的概率
+    return Math.exp((energy - newEnergy) / temperature);
+  }
+
+  /** 请完成下面这个函数，实现题目要求的功能 * */
+  /** 当然，你也可以不按照这个模板来作答，完全按照自己的想法来 ^-^ * */
+  static void calculate() {
+
+    // 初始化
+    double temp = 10000;
+    // 退火率
+    double coolingRate = 0.003;
+
+    // 初始化当前派送路线
+    Tour currentSolution = new Tour();
+    currentSolution.generateRandomTour();
+
+    // 设置当前最好的派送路线
+    Tour best = new Tour(currentSolution.getTour());
+
+    // 循环，直到退火结束
+    while (temp > 1) {
+      // 通过currentSolution建立新的派送路线newSolution
+      Tour newSolution = new Tour(currentSolution.getTour());
+
+      // 从newSolution随机获取两个派送点
+      int tourPos1 = (int) (newSolution.tourSize() * Math.random());
+      int tourPos2 = (int) (newSolution.tourSize() * Math.random());
+      Point pointSwap1 = newSolution.getPoint(tourPos1);
+      Point pointSwap2 = newSolution.getPoint(tourPos2);
+
+      // 交换获取的两个派送点
+      newSolution.setPoint(tourPos2, pointSwap1);
+      newSolution.setPoint(tourPos1, pointSwap2);
+
+      // 得到newSolution和currentSolution两种派送方案的距离
+      int currentEnergy = currentSolution.getTotleDistance();
+      int neighbourEnergy = newSolution.getTotleDistance();
+
+      // 通过退火函数决定是否新的派送路线方案优于当前的派送方案
+      if (acceptanceProbability(currentEnergy, neighbourEnergy, temp) > Math.random()) {
+        currentSolution = new Tour(newSolution.getTour());
+      }
+
+      // 保存最优派送方案
+      if (currentSolution.getTotleDistance() < best.getTotleDistance()) {
+        best = new Tour(currentSolution.getTour());
+      }
+
+      // 退火
+      temp *= 1 - coolingRate;
+    }
+
+    System.out.println(best.getTotleDistance());
+  }
+
+  // 经典的TSP问题，采用模拟退火优化
+  public static void main(String[] args) {
+    Scanner scanner = new Scanner(System.in);
+    int num = Integer.parseInt(scanner.nextLine().trim()); // 输入的站点数
+    NUM = num + 1; // 总站点数
+    int index = 0;
+    String[] locations = new String[num];
+    destinationPoints.add(new Point(0, 0));
+    while (num-- > 0) {
+      String temp = scanner.nextLine();
+      locations[index++] = temp;
+      String[] numberStr = temp.split(",");
+      int x = Integer.parseInt(numberStr[0]);
+      int y = Integer.parseInt(numberStr[1]);
+      destinationPoints.add(new Point(x, y));
+    }
+
+    calculate();
+  }
+}
